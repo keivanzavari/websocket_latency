@@ -22,7 +22,7 @@ def dynamic_reconfigure_callback(config: Dict[str, Any], level: Any,
 
 async def publish(param: definitions.CommunicationParams) -> None:
     async with websockets.connect(param.uri) as websocket:
-        await websocket.send(json.dumps({"op": "advertise", "topic": param.topic, "type": param.MSG_TYPE}))
+        await websocket.send(json.dumps({"op": "advertise", "topic": param.topic, "type": definitions.MSG_TYPE}))
         await asyncio.sleep(1.0 / param.freq)
         msg_zero = definitions.MSG_CLASS()
         msg_one = definitions.MSG_CLASS()
