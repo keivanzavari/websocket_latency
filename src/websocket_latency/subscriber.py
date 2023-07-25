@@ -1,50 +1,42 @@
 #! /usr/bin/env python3
-import rospy
 import time
 import asyncio
 import websockets
 import json
+
 from rospy_message_converter import message_converter
+import rospy
 
-import sv_msgs.msg
-
-
-class CommunicationParams:
-
-    def __init__(self, topic: str = "") -> None:
-        self.uri = "ws://10.20.6.12:49152"
-        self.topic = topic
-        self.msg_type = sv_msgs.msg.PTUState_v2._type
+import websocket_latency.definitions as definitions
 
 
-async def subscribe(param: CommunicationParams) -> float:
+async def subscribe(param: definitions.CommunicationParams) -> float:
     async with websockets.connect(param.uri) as websocket:
         await websocket.send(json.dumps({"op": "subscribe", "topic": param.topic}))
         while True:
-            not_started = True
-            start = 0.0
-            while not_started:
+            started = False
+            start_time = 0.0
+            while started:
                 message = json.loads(await websocket.recv())
-                ptu_state: sv_msgs.msg.PTUState_v2 = message_converter.convert_dictionary_to_ros_message(
-                    param.msg_type, message["msg"])
+                ptu_state: definitions.MSG_CLASS = message_converter.convert_dictionary_to_ros_message(
+                    definitions.MSG_TYPE, message["msg"])
                 to_sec = ptu_state.header.stamp.to_sec()
                 if to_sec == 0.0:
-                    start = time.time()
-                    print("started")
-                    not_started = False
+                    start_time = time.time()
+                    rospy.loginfo("started")
+                    started = True
 
             message = json.loads(await websocket.recv())
-            ptu_state: sv_msgs.msg.PTUState_v2 = message_converter.convert_dictionary_to_ros_message(
-                param.msg_type, message["msg"])
-            recv_timestamp = time.time()
-            elapsed = recv_timestamp - start
-            print(f"elapsed {elapsed}")
-            not_started = True
+            ptu_state: definitions.MSG_CLASS = message_converter.convert_dictionary_to_ros_message(
+                definitions.MSG_TYPE, message["msg"])
+            elapsed = time.time() - start_time
+            rospy.logwarn(f"elapsed {elapsed}")
+            started = False
 
 
 if __name__ == "__main__":
 
-    param = CommunicationParams(topic="/api/external/timestamp")
+    param = definitions.CommunicationParams(topic="/api/external/timestamp")
 
     try:
         rospy.init_node("subcriber", log_level=rospy.WARN)

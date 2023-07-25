@@ -11,10 +11,9 @@ find_package(
 
 catkin_python_setup()
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(cfg/DynamicParameters.cfg)
 
-# Declare that this catkin package's runtime dependencies
+# Runtime dependencies
 catkin_package(
   CATKIN_DEPENDS
   rospy

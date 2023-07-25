@@ -1,50 +1,45 @@
 #! /usr/bin/env python3
-from typing import Any, Dict
-import rospy
-import dynamic_reconfigure.server
-from websocket_latency.cfg import DynamicParametersConfig
-import time
+from typing import Any, Dict, Type
 import asyncio
 import websockets
 import json
-import sv_msgs.msg
+
+import rospy
+import dynamic_reconfigure.server
 from rospy_message_converter import message_converter
 
+import websocket_latency.definitions as definitions
 
-class CommunicationParams:
-
-    def __init__(self, topic: str = "") -> None:
-        self.uri = "ws://127.0.0.1:49152"
-        self.freq = 1.0
-        self.topic = topic
-        self.msg_type = sv_msgs.msg.PTUState_v2._type
+from websocket_latency.cfg import DynamicParametersConfig
+import std_msgs.msg
 
 
-def dynamic_reconfigure_callback(config: Dict[str, Any], level: Any, param: CommunicationParams) -> Dict[str, Any]:
+def dynamic_reconfigure_callback(config: Dict[str, Any], level: Any,
+                                 param: definitions.CommunicationParams) -> Dict[str, Any]:
     param.freq = config.freq
     return config
 
 
-async def publish(param: CommunicationParams) -> None:
+async def publish(param: definitions.CommunicationParams) -> None:
     async with websockets.connect(param.uri) as websocket:
-        await websocket.send(json.dumps({"op": "advertise", "topic": param.topic, "type": param.msg_type}))
+        await websocket.send(json.dumps({"op": "advertise", "topic": param.topic, "type": param.MSG_TYPE}))
         await asyncio.sleep(1.0 / param.freq)
-        p0 = sv_msgs.msg.PTUState_v2()
-        p1 = sv_msgs.msg.PTUState_v2()
+        msg_zero = definitions.MSG_CLASS()
+        msg_one = definitions.MSG_CLASS()
 
         while True:
             msg_to_send = {
                 "op": "publish",
                 "topic": param.topic,
-                "msg": message_converter.convert_ros_message_to_dictionary(p0)
+                "msg": message_converter.convert_ros_message_to_dictionary(msg_zero)
             }
             await websocket.send(json.dumps(msg_to_send))
 
-            p1.header.stamp = rospy.Time.now()
+            msg_one.stamp = rospy.Time.now()
             msg_to_send = {
                 "op": "publish",
                 "topic": param.topic,
-                "msg": message_converter.convert_ros_message_to_dictionary(p1)
+                "msg": message_converter.convert_ros_message_to_dictionary(msg_one)
             }
 
             await websocket.send(json.dumps(msg_to_send))
@@ -62,7 +57,7 @@ def publish_on_thread(param):
 import threading
 if __name__ == "__main__":
 
-    param = CommunicationParams(topic="/api/external/timestamp")
+    param = definitions.CommunicationParams(topic="/external/timestamp")
 
     try:
         rospy.init_node("publisher", log_level=rospy.WARN)
