@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+  <include ns="api" file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+    <arg name="websocket_ping_interval" value="5"/>
+    <arg name="port" value="49152"/>
+    <arg name="websocket_external_port" value="49152"/>
+  </include>
+
+  <node pkg="external_api" type="endpoints.py" name="endpoints" output="screen"/>
+</launch>
