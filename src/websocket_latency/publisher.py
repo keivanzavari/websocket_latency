@@ -3,6 +3,7 @@ from typing import Any, Dict, Type
 import asyncio
 import websockets
 import json
+import threading
 
 import rospy
 import dynamic_reconfigure.server
@@ -11,7 +12,6 @@ from rospy_message_converter import message_converter
 import websocket_latency.definitions as definitions
 
 from websocket_latency.cfg import DynamicParametersConfig
-import std_msgs.msg
 
 
 def dynamic_reconfigure_callback(config: Dict[str, Any], level: Any,
@@ -54,7 +54,6 @@ def publish_on_thread(param):
     loop.close()
 
 
-import threading
 if __name__ == "__main__":
 
     param = definitions.CommunicationParams(topic="/external/timestamp")
